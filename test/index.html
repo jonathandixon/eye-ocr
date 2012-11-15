@@ -1,0 +1,120 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      #filedrop {
+        background-color: #C2C2C2;
+        display: table-cell;
+        height: 150px;
+        width: 200px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      #filedrop p {
+        font-weight: bold;
+        color: #2C2C2C;
+      }
+      #imageCanvas {
+        border: 2px solid #2C2C2C;
+        position: absolute;
+        top: 0;
+        left: 220px;
+      }
+    </style>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="../lib/ocr.js"></script>
+  </head>
+  <body>
+    <div id="filedrop">
+      <p>Drop Image Here</p>
+    </div>
+
+    <canvas id="imageCanvas" width="300" height="200"></canvas>
+
+    <script>
+      $(function() {
+        $('#filedrop').on('dragenter dragover', function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+        });
+
+        $('*').on('drop', function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+        });
+
+        $('#filedrop').on('drop', function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+
+          var files = e.originalEvent.dataTransfer.files;
+          var file = files[0];
+          var size = file.size;
+
+          if (!file.type.match(/image.*/)) {
+            alert("File must be an image!");
+            return false;
+          }
+
+          var reader = new FileReader(),
+              image = new Image();
+
+          reader.onload = function(e) {
+            image.onload = function() {
+              loadImageCanvas(this);
+            }
+            image.src = e.target.result;
+          }
+
+          reader.readAsDataURL(file);
+          console.log("Dropped file of size: " + size);
+          return false;
+        });
+
+        function loadImageCanvas(image) {
+          var canvas = $('#imageCanvas')[0];
+
+          var width = image.width;
+          var height = image.height;
+
+          var max = Math.max(width, height)
+          var scale = Math.min(max, 500) / max;
+
+          width *= scale;
+          height *= scale;
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // draw image to preview canvas
+          var context = canvas.getContext("2d");
+          context.drawImage(image, 0, 0, image.width, image.height,
+                            0, 0, width, height);
+
+          // Convert to grey scale
+          var imageData = context.getImageData(0, 0, width, height);
+          //convert_grey(imageData);
+          //imageData = context.putImageData(imageData, 0, 0);
+        }
+
+        // FROM: http://ejohn.org/blog/ocr-and-neural-nets-in-javascript/
+        function convert_grey(image_data){
+          console.log("Converting to black/white.");
+          for (var x = 0; x < image_data.width; x++){
+            for (var y = 0; y < image_data.height; y++){
+              var i = x*4+y*4*image_data.width;
+              var luma = Math.floor(image_data.data[i] * 299/1000 +
+                image_data.data[i+1] * 587/1000 +
+                image_data.data[i+2] * 114/1000);
+              image_data.data[i] = luma;
+              image_data.data[i+1] = luma;
+              image_data.data[i+2] = luma;
+              image_data.data[i+3] = 255;
+            }
+          }
+        }
+
+      });
+    </script>
+  </body>
+</html>

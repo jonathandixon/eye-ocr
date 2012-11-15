@@ -1,0 +1,22 @@
+{
+    "name": "ocr-js",
+    "description": "OCR using Neural Network",
+    "version": "0.0.1",
+    "author": "Jonathan Dixon <dixonj16@gmail.com>",
+    "repository": {
+        "type": "git",
+        "url": "https://bitbucket.org/dixonj16/ocr-js.git"
+    },
+    "main": "./lib/ocr",
+    "dependencies": {
+        "brain" : ">=0.6.1"
+    },
+    "devDependencies" : {
+        "mocha" : ">=1.0.0",
+        "canvas" : ">=0.10.0",
+        "cradle" : ">=0.2.0",
+        "should" : ">=0.6.0",
+        "async" : ">=0.1.18"
+    },
+    "keywords": ["ocr", "neural network"]
+}
