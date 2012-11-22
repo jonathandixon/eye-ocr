@@ -1,0 +1,127 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      input {
+        border: 1px solid #999;
+        color: #2C2C2C;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        width: 100px;
+      }
+
+      #canvas canvas {
+        border: 1px solid #2C2C2C;
+      }
+    </style> <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="../lib/ocr.js"></script>
+  </head>
+  <body>
+    <input type="text" id="character" maxlength="1"/>
+    <br />
+
+    <div id="canvas">
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+      $(function() {
+        $('#character').on('keyup', function(e) {
+          var $this = $(this);
+
+          $this.attr('readonly', true);
+          processCharacter($this.val());
+          $this.removeAttr('readonly');
+          $this.val('');
+        });
+
+        function processCharacter(character) {
+          if (character == '') {
+            return;
+          }
+          var canvas = $("<canvas>")
+              .attr("width", 10)
+              .attr("height", 10)[0];
+          var context = canvas.getContext('2d');
+
+          var imageData = charImageData(character);
+
+          var tempCanvas = $("<canvas>")
+              .attr("width", imageData.width)
+              .attr("height", imageData.height)[0];
+
+          tempCanvas.getContext("2d").putImageData(imageData, 0, 0);
+
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          var scale = Math.min(canvas.width/imageData.width, canvas.height/imageData.height);
+          context.scale(scale, scale);
+          context.drawImage(tempCanvas, 0, 0);
+
+          $('#canvas').html(canvas);
+        }
+
+        function charImageData(character) {
+          var canvas = $("<canvas>")
+              .attr("width", 100).attr("height", 100)[0];
+          var context = canvas.getContext('2d');
+          context.font = '30pt helvetica';
+          context.fillText(character, 25, canvas.height - 30);
+
+          var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          var area = image_area(imageData);
+          return context.getImageData(area.x, area.y, area.width, area.height);
+        }
+
+        function image_area(image_data){
+          // TODO: change x/y_coord to single (return) object.
+          var x_coord = [-1, -1];
+          var y_coord = [-1, -1];
+          for (var y = 0; y < image_data.height; y++){
+            var blank_row = true;
+            for (var x = 0; x < image_data.width; x++){
+              var i = x*4+y*4*image_data.width;
+
+              var luma = Math.floor(image_data.data[i] * 299/1000 +
+                image_data.data[i+1] * 587/1000 +
+                image_data.data[i+2] * 114/1000);
+
+              if (luma < 200 && image_data.data[i+3] > 0) {
+                blank_row = false;
+                if (x_coord[0] < 0 || x_coord[0] > x) {
+                  x_coord[0] = x // Start X
+                }
+                if (x_coord[1] < x) {
+                  x_coord[1] = x // End X
+                }
+
+                if (y_coord[0] < 0) {
+                  y_coord[0] = y; // Start Y                 
+                }
+                y_coord[1] = -1; // Reset End Y
+              }
+            }
+
+            if (blank_row && y_coord[0] >= 0 && y_coord[1] < 0) {
+              y_coord[1] = y; // End Y
+            }
+          }
+
+          $('#output').html(
+            '<p>(' + x_coord[0] + ', ' + y_coord[0] + ') - (' 
+            + x_coord[1] + ', ' + y_coord[1] + ')</p>'
+          );
+
+          return {
+            x: x_coord[0],
+            y: y_coord[0],
+            width: x_coord[1] - x_coord[0] + 1,
+            height: y_coord[1] - y_coord[0]
+          };
+        }
+
+      });
+    </script>
+  </body>
+</html>

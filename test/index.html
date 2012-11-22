@@ -67,7 +67,6 @@
           }
 
           reader.readAsDataURL(file);
-          console.log("Dropped file of size: " + size);
           return false;
         });
 
@@ -93,13 +92,61 @@
 
           // Convert to grey scale
           var imageData = context.getImageData(0, 0, width, height);
+          var lines = find_lines(imageData, 100, Math.floor(width * 0.01));
+
+          // Box Lines 
+          box_lines(imageData, lines);
+          
           //convert_grey(imageData);
-          //imageData = context.putImageData(imageData, 0, 0);
+          imageData = context.putImageData(imageData, 0, 0);
+        }
+
+        function find_lines(image_data, threshold, allowed){
+          var lines = [];
+          var in_line = false;
+          for (var y = 0; y < image_data.height; y++){
+            var pixels = 0;
+            for (var x = 0; x < image_data.width; x++){
+              var i = x*4+y*4*image_data.width;
+              var luma = Math.floor(image_data.data[i] * 299/1000 +
+                image_data.data[i+1] * 587/1000 +
+                image_data.data[i+2] * 114/1000);
+              image_data.data[i] = luma;
+              image_data.data[i+1] = luma;
+              image_data.data[i+2] = luma;
+              image_data.data[i+3] = 255;
+
+              if (luma < threshold) {
+                pixels++;
+              }
+            }
+
+            if ((pixels > allowed && !in_line)
+                || (pixels <= allowed && in_line)) {
+              lines.push(y);
+              in_line = !in_line;
+            }
+          }
+          return lines;
+        }
+
+        function box_lines(image_data, lines){
+          var in_line = false;
+          for (var l = 0; l < lines.length; l++) {
+            var y = lines[l];
+            for (var x = 0; x < image_data.width; x++){
+              var i = x*4+y*4*image_data.width;
+              image_data.data[i] = 255;
+              image_data.data[i+1] = 0;
+              image_data.data[i+2] = 0;
+              image_data.data[i+3] = 255;
+
+            }
+          }
         }
 
         // FROM: http://ejohn.org/blog/ocr-and-neural-nets-in-javascript/
         function convert_grey(image_data){
-          console.log("Converting to black/white.");
           for (var x = 0; x < image_data.width; x++){
             for (var y = 0; y < image_data.height; y++){
               var i = x*4+y*4*image_data.width;
