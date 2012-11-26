@@ -16,28 +16,74 @@
       }
     </style> <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     <script src="../lib/ocr.js"></script>
+    <script src="../node_modules/brain/brain-0.5.0.js"></script>
   </head>
   <body>
     <input type="text" id="character" maxlength="1"/>
+    &nbsp;or&nbsp;
+    <button type="button" id="autoTrain">Auto Train</button>
     <br />
+    Test Network: <input type="text" id="test" maxlength="1"/>
 
-    <div id="canvas">
-    </div>
-
+    <div id="canvas"></div>
     <div id="output"></div>
+    <hr/>
+    <button type="button" id="export">Export Neural Network</button>
+    <br />
+    <textarea id="network" cols="50" rows="15"></textarea>
 
     <script>
       $(function() {
+        var net = new brain.NeuralNetwork();
+        // --------------------------
+        var trainData = {
+          input: [],
+          output: {}
+        };
+        for (var i = 0; i < 100; i++) {
+          trainData.input.push(0);
+        }
+        for (var i = 33; i < 127; i++) {
+          trainData.output[String.fromCharCode(i)] = 0;
+        }
+        net.train([trainData]);
+        // --------------------------
+
+        $('#export').on('click', function(e) {
+          $('#network').val(JSON.stringify(net.toJSON()));
+        });
+
+        $('#autoTrain').on('click', function(e) {
+          var input = $('#character');
+          input.attr('readonly', true);
+
+          for (var i = 33; i < 127; i++) {
+            processCharacter(String.fromCharCode(i), true);
+          }
+
+          input.removeAttr('readonly');
+          input.val('');
+        });
+
         $('#character').on('keyup', function(e) {
           var $this = $(this);
 
           $this.attr('readonly', true);
-          processCharacter($this.val());
+          processCharacter($this.val(), true);
           $this.removeAttr('readonly');
           $this.val('');
         });
 
-        function processCharacter(character) {
+        $('#test').on('keyup', function(e) {
+          var $this = $(this);
+
+          $this.attr('readonly', true);
+          processCharacter($this.val(), false);
+          $this.removeAttr('readonly');
+          $this.val('');
+        });
+
+        function processCharacter(character, train) {
           if (character == '') {
             return;
           }
@@ -59,6 +105,20 @@
           context.scale(scale, scale);
           context.drawImage(tempCanvas, 0, 0);
 
+          var charNetwork = getCharNetwork(context.getImageData(0, 0, canvas.width, canvas.height));
+          if (train) {
+            var trainData = {
+              input: charNetwork,
+              output: {}
+            };
+            trainData.output[character] = 1;
+            
+            net.train([trainData]);
+          } else {
+            var result = net.run(charNetwork);
+            console.log(charNetwork);
+            console.log(result);
+          }
           $('#canvas').html(canvas);
         }
 
@@ -119,6 +179,27 @@
             width: x_coord[1] - x_coord[0] + 1,
             height: y_coord[1] - y_coord[0]
           };
+        }
+
+        function getCharNetwork(image_data){
+          var network = [];
+          for (var y = 0; y < image_data.height; y++){
+            for (var x = 0; x < image_data.width; x++){
+              var i = x*4+y*4*image_data.width;
+
+              var luma = Math.floor(image_data.data[i] * 299/1000 +
+                image_data.data[i+1] * 587/1000 +
+                image_data.data[i+2] * 114/1000);
+
+              if (image_data.data[i+3] == 0) {
+                luma = 255;
+              }
+
+              network.push(1 - luma/255);
+            }
+          }
+
+          return network;
         }
 
       });

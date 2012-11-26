@@ -23,6 +23,8 @@
     </style>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     <script src="../lib/ocr.js"></script>
+    <script src="../lib/english_network.js"></script>
+    <script src="../node_modules/brain/brain-0.5.0.js"></script>
   </head>
   <body>
     <div id="filedrop">
@@ -31,8 +33,15 @@
 
     <canvas id="imageCanvas" width="300" height="200"></canvas>
 
+    <div id="output"></div>
+
     <script>
       $(function() {
+        // Setup Neural Network
+        var net = new brain.NeuralNetwork();
+        net.fromJSON(english_network);
+
+        // File Drop
         $('#filedrop').on('dragenter dragover', function(e) {
           e.stopPropagation();
           e.preventDefault();
@@ -94,8 +103,11 @@
           var imageData = context.getImageData(0, 0, width, height);
           var lines = find_lines(imageData, 100, Math.floor(width * 0.01));
 
+          // Chars
+          process_lines(imageData, lines, context);
+
           // Box Lines 
-          box_lines(imageData, lines);
+          //box_lines(imageData, lines);
           
           //convert_grey(imageData);
           imageData = context.putImageData(imageData, 0, 0);
@@ -130,6 +142,56 @@
           return lines;
         }
 
+        function process_lines(image_data, lines, context) {
+          var threshold = 100;
+          var allowed = 0;
+          for (var lineIndex = 0; lineIndex < lines.length; lineIndex+=2) {
+            var cols = [];
+            var in_col = false;
+            for (var x = 0; x < image_data.width; x++){
+              var pixels = 0;
+              for (var y = lines[lineIndex]; y <= lines[lineIndex+1]; y++){
+                var i = x*4+y*4*image_data.width;
+                var luma = Math.floor(image_data.data[i] * 299/1000 +
+                  image_data.data[i+1] * 587/1000 +
+                  image_data.data[i+2] * 114/1000);
+                image_data.data[i] = luma;
+                image_data.data[i+1] = luma;
+                image_data.data[i+2] = luma;
+                image_data.data[i+3] = 255;
+                
+                if (luma < threshold) {
+                  pixels++;
+                }
+              }
+
+              if ((pixels > allowed && !in_col)
+                  || (pixels <= allowed && in_col)) {
+                cols.push(x);
+                in_col = !in_col;
+              }
+            }
+
+            for (var y = 0; y < lines.length; y+=2) {
+              for (var x = 0; x < cols.length; x+=2) {
+                var charData = context.getImageData(cols[x], lines[y], cols[x+1] - cols[x], lines[y+1] - lines[y]);
+
+                 var tempCanvas = $("<canvas>")
+                     .attr("width", 10)
+                     .attr("height", 10)[0];
+                 var tempContext = tempCanvas.getContext("2d"); 
+                 var scale = Math.min(10/charData.width, 10/charData.height);
+                 tempContext.scale(scale, scale);
+                 tempContext.putImageData(charData, 0, 0);
+
+                 var charNetwork = getCharNetwork(tempContext.getImageData(0, 0, 10, 10));
+                 var result = net.run(charNetwork);
+                 console.log(result);
+              }
+            }
+          }
+        }
+
         function box_lines(image_data, lines){
           var in_line = false;
           for (var l = 0; l < lines.length; l++) {
@@ -159,6 +221,23 @@
               image_data.data[i+3] = 255;
             }
           }
+        }
+
+        function getCharNetwork(image_data){
+          var network = [];
+          for (var y = 0; y < image_data.height; y++){
+            for (var x = 0; x < image_data.width; x++){
+              var i = x*4+y*4*image_data.width;
+
+              var luma = Math.floor(image_data.data[i] * 299/1000 +
+                image_data.data[i+1] * 587/1000 +
+                image_data.data[i+2] * 114/1000);
+
+              network.push(1 - luma/255);
+            }
+          }
+
+          return network;
         }
 
       });
