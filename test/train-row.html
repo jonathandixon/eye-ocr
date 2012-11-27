@@ -49,7 +49,10 @@
           "hoge,impact"
         ];
 
-        var net = new brain.NeuralNetwork();
+        var net = new brain.NeuralNetwork({
+          hiddenLayers: [10, 16, 25],
+          learningRate: 0.8
+        });
 
         $('#export').on('click', function(e) {
           $('#network').val(JSON.stringify(net.toJSON()));
@@ -71,7 +74,7 @@
           }
           console.log(data);
 
-          var out = net.train(data);
+          var out = net.train(data, 0.003, 20000);
           console.log(out);
 
           input.removeAttr('readonly');
@@ -105,7 +108,7 @@
           tempCanvas.getContext("2d").putImageData(imageData, 0, 0);
 
           context.clearRect(0, 0, canvas.width, canvas.height);
-          var scale = Math.min(canvas.width/imageData.width, canvas.height/imageData.height);
+          var scale = Math.min(canvas.width/imageData.width, canvas.height/imageData.height, 1);
           context.scale(scale, scale);
           context.drawImage(tempCanvas, 0, 0);
 
@@ -121,13 +124,7 @@
           } else {
             var result = net.run(charNetwork);
             //console.log(charNetwork);
-            var likely = {};
-            for (var key in result) {
-              if (result[key] > 0.5) {
-                likely[key] = result[key];
-              }
-            }
-            console.log(likely);
+            console.log(result);
           }
           $('#canvas').html(canvas);
         }
@@ -195,6 +192,7 @@
           var network = [];
 
           for (var y = 0; y < image_data.height; y++){
+            var total = 0;
             for (var x = 0; x < image_data.width; x++){
               var i = x*4+y*4*image_data.width;
 
@@ -202,8 +200,11 @@
                 image_data.data[i+1] * 587/1000 +
                 image_data.data[i+2] * 114/1000);
 
-              network[y * image_data.width + x] = (image_data.data[i+3] > 0) ? 1 : 0;
+              if (image_data.data[i+3] > 0) {
+                total += Math.pow(2, image_data.width - x - 1);
+              }
             }
+            network.push(total / (Math.pow(2, image_data.width) - 1));
           }
 
           return network;
