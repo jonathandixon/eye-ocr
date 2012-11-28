@@ -20,11 +20,14 @@
         top: 0;
         left: 220px;
       }
+      #output {
+        width: 200px;
+      }
     </style>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     <script src="../lib/ocr.js"></script>
     <script src="../lib/english_network.js"></script>
-    <script src="../node_modules/brain/brain-0.5.0.js"></script>
+    <script src="../node_modules/brain/lib/brain-0.6.0.js"></script>
   </head>
   <body>
     <div id="filedrop">
@@ -123,10 +126,9 @@
               var luma = Math.floor(image_data.data[i] * 299/1000 +
                 image_data.data[i+1] * 587/1000 +
                 image_data.data[i+2] * 114/1000);
-              image_data.data[i] = luma;
-              image_data.data[i+1] = luma;
-              image_data.data[i+2] = luma;
-              image_data.data[i+3] = 255;
+              if (luma > 150) {
+                luma = 255;
+              }
 
               if (luma < threshold) {
                 pixels++;
@@ -135,7 +137,7 @@
 
             if ((pixels > allowed && !in_line)
                 || (pixels <= allowed && in_line)) {
-              lines.push(y);
+              lines.push(y + (in_line ? 1 : -1));
               in_line = !in_line;
             }
           }
@@ -155,10 +157,9 @@
                 var luma = Math.floor(image_data.data[i] * 299/1000 +
                   image_data.data[i+1] * 587/1000 +
                   image_data.data[i+2] * 114/1000);
-                image_data.data[i] = luma;
-                image_data.data[i+1] = luma;
-                image_data.data[i+2] = luma;
-                image_data.data[i+3] = 255;
+                if (luma > 150) {
+                  luma = 255;
+                }
                 
                 if (luma < threshold) {
                   pixels++;
@@ -167,26 +168,33 @@
 
               if ((pixels > allowed && !in_col)
                   || (pixels <= allowed && in_col)) {
-                cols.push(x);
+                cols.push(x + (in_col ? 1 : -1));
                 in_col = !in_col;
               }
             }
 
-            for (var y = 0; y < lines.length; y+=2) {
-              for (var x = 0; x < cols.length; x+=2) {
+            for (var y = 0; y < lines.length - 1; y+=2) {
+              for (var x = 0; x < cols.length - 1; x+=2) {
                 var charData = context.getImageData(cols[x], lines[y], cols[x+1] - cols[x], lines[y+1] - lines[y]);
 
                  var tempCanvas = $("<canvas>")
                      .attr("width", 10)
                      .attr("height", 10)[0];
                  var tempContext = tempCanvas.getContext("2d"); 
-                 var scale = Math.min(10/charData.width, 10/charData.height);
+                 var scale = Math.min(10/charData.width, 10/charData.height, 1);
                  tempContext.scale(scale, scale);
                  tempContext.putImageData(charData, 0, 0);
 
                  var charNetwork = getCharNetwork(tempContext.getImageData(0, 0, 10, 10));
                  var result = net.run(charNetwork);
-                 console.log(result);
+                 $('#output').append(tempCanvas);
+                 var likely = {};
+                 for (var key in result) {
+                   if (result[key] > 0.5) {
+                     likely[String.fromCharCode(key)] = result[key];
+                   }
+                 }
+                 console.log(likely);
               }
             }
           }
@@ -233,7 +241,13 @@
                 image_data.data[i+1] * 587/1000 +
                 image_data.data[i+2] * 114/1000);
 
+              network[y * image_data.width + x] = (luma < 150 && image_data.data[i+3] > 0) ? 1 : 0;
+              /*
+              if (image_data.data[i+3] > 0) {
+                luma = 255;
+              }
               network.push(1 - luma/255);
+              */
             }
           }
 

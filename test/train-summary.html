@@ -49,10 +49,7 @@
           "hoge,impact"
         ];
 
-        var net = new brain.NeuralNetwork({
-          hiddenLayers: [10, 16, 25],
-          learningRate: 0.8
-        });
+        var net = new brain.NeuralNetwork();
 
         $('#export').on('click', function(e) {
           $('#network').val(JSON.stringify(net.toJSON()));
@@ -74,7 +71,7 @@
           }
           console.log(data);
 
-          var out = net.train(data, 0.003, 20000);
+          var out = net.train(data);
           console.log(out);
 
           input.removeAttr('readonly');
@@ -101,32 +98,19 @@
 
           var imageData = charImageData(character, font);
 
-          var tempCanvas = $("<canvas>")
-              .attr("width", imageData.width)
-              .attr("height", imageData.height)[0];
+          var charNetwork = getCharNetwork(imageData);
 
-          tempCanvas.getContext("2d").putImageData(imageData, 0, 0);
-
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          var scale = Math.min(canvas.width/imageData.width, canvas.height/imageData.height, 1);
-          context.scale(scale, scale);
-          context.drawImage(tempCanvas, 0, 0);
-
-          var charNetwork = getCharNetwork(context.getImageData(0, 0, canvas.width, canvas.height));
           if (train) {
-            var trainData = {
+            var data = {
               input: charNetwork,
               output: {}
             };
-            trainData.output[character] = 1;
-            return trainData;
-            //net.train([trainData]);
+            data.output[character] = 1;
+            return data;
           } else {
             var result = net.run(charNetwork);
-            //console.log(charNetwork);
             console.log(result);
           }
-          $('#canvas').html(canvas);
         }
 
         function charImageData(character, font) {
@@ -189,10 +173,10 @@
         }
 
         function getCharNetwork(image_data){
-          var network = [];
+          var network = {};
+          var total = 0;
 
           for (var y = 0; y < image_data.height; y++){
-            var total = 0;
             for (var x = 0; x < image_data.width; x++){
               var i = x*4+y*4*image_data.width;
 
@@ -200,12 +184,15 @@
                 image_data.data[i+1] * 587/1000 +
                 image_data.data[i+2] * 114/1000);
 
-              if (image_data.data[i+3] > 0) {
-                total += Math.pow(2, image_data.width - x - 1);
+              if (luma < 220 && image_data.data[i+3] > 0) {
+                total++;
               }
             }
-            network.push(total / (Math.pow(2, image_data.width) - 1));
           }
+
+          network.colored = total / (image_data.height * image_data.width);
+          network.wide = (image_data.height > image_data.width) ? 0 : 1;
+          network.ratio = Math.min(1, image_data.width/image_data.height);
 
           return network;
         }
