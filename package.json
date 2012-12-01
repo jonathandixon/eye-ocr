@@ -1,13 +1,13 @@
 {
-    "name": "ocr-js",
+    "name": "horus-js",
     "description": "OCR using Neural Network",
     "version": "0.0.1",
     "author": "Jonathan Dixon <dixonj16@gmail.com>",
     "repository": {
         "type": "git",
-        "url": "https://bitbucket.org/dixonj16/ocr-js.git"
+        "url": "https://github.com/dixonj16/horus-js.git"
     },
-    "main": "./lib/ocr",
+    "main": "./lib/horus",
     "dependencies": {
         "brain" : ">=0.6.1"
     },

@@ -25,7 +25,6 @@
       }
     </style>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-    <script src="../lib/ocr.js"></script>
     <script src="../lib/english_network.js"></script>
     <script src="../node_modules/brain/lib/brain-0.6.0.js"></script>
   </head>
@@ -126,9 +125,14 @@
               var luma = Math.floor(image_data.data[i] * 299/1000 +
                 image_data.data[i+1] * 587/1000 +
                 image_data.data[i+2] * 114/1000);
+
               if (luma > 150) {
                 luma = 255;
               }
+              image_data.data[i] = luma;
+              image_data.data[i+1] = luma;
+              image_data.data[i+2] = luma;
+              image_data.data[i+3] = 255;
 
               if (luma < threshold) {
                 pixels++;
@@ -154,12 +158,7 @@
               var pixels = 0;
               for (var y = lines[lineIndex]; y <= lines[lineIndex+1]; y++){
                 var i = x*4+y*4*image_data.width;
-                var luma = Math.floor(image_data.data[i] * 299/1000 +
-                  image_data.data[i+1] * 587/1000 +
-                  image_data.data[i+2] * 114/1000);
-                if (luma > 150) {
-                  luma = 255;
-                }
+                var luma = image_data.data[i];
                 
                 if (luma < threshold) {
                   pixels++;
@@ -175,22 +174,23 @@
 
             for (var y = 0; y < lines.length - 1; y+=2) {
               for (var x = 0; x < cols.length - 1; x+=2) {
-                var charData = context.getImageData(cols[x], lines[y], cols[x+1] - cols[x], lines[y+1] - lines[y]);
+                var width = cols[x+1] - cols[x];
+                var height = lines[y+1] - lines[y];
 
                  var tempCanvas = $("<canvas>")
                      .attr("width", 10)
                      .attr("height", 10)[0];
                  var tempContext = tempCanvas.getContext("2d"); 
-                 var scale = Math.min(10/charData.width, 10/charData.height, 1);
+                 var scale = Math.min(10/width, 10/height, 1);
                  tempContext.scale(scale, scale);
-                 tempContext.putImageData(charData, 0, 0);
+                 tempContext.drawImage(context.canvas, cols[x], lines[y], width, height, 0, 0, width, height);
 
                  var charNetwork = getCharNetwork(tempContext.getImageData(0, 0, 10, 10));
                  var result = net.run(charNetwork);
                  $('#output').append(tempCanvas);
                  var likely = {};
                  for (var key in result) {
-                   if (result[key] > 0.5) {
+                   if (result[key] > 0.3) {
                      likely[String.fromCharCode(key)] = result[key];
                    }
                  }
