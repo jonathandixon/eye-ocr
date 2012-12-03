@@ -1,5 +1,6 @@
 var assert = require('assert'),
     canvas = require('canvas'),
+    _ = require('underscore'),
     processor = require('../lib/processor'),
     horus = require('../lib/horus');
 
@@ -15,7 +16,19 @@ describe('Array', function(){
       var imageData = context.getImageData(0, 0, size, size);
       
       var result = processor.extractData(imageData);
-      assert.ok(result.length > 0);
+      assert.ok(result.length == size * size);
+
+      var sum = _.reduce(result, function(sum, n) { return sum + n; }, 0);
+      assert.ok(sum > 1, 'Sum: ' + sum + ', was expecting > 1.');
+    })
+  }),
+
+  describe('dataFromStringTest', function(){
+    it('test extract data from character', function(){
+      var size = 10, character = 'A';
+      var result = processor.dataFromString(character, size, 'Helvetica');
+      assert.ok(result.input.length == size * size);
+      assert.ok(result.output[character] == 1);
     })
   }),
 
