@@ -8,6 +8,10 @@
         "url": "https://github.com/dixonj16/horus-js.git"
     },
     "main": "./lib/horus",
+    "scripts": {
+      "test": "mocha test",
+      "build": "uglify horus"
+    },
     "dependencies": {
         "brain" : ">=0.6.1"
     },
