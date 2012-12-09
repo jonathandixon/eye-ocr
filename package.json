@@ -9,7 +9,7 @@
     },
     "main": "./lib/horus",
     "scripts": {
-      "test": "mocha test",
+      "test": "make test",
       "build": "uglify horus"
     },
     "dependencies": {
