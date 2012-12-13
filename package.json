@@ -1,27 +1,30 @@
 {
-    "name": "horus-js",
-    "description": "OCR using Neural Network",
+    "name": "eye-ocr",
     "version": "0.0.1",
-    "author": "Jonathan Dixon <dixonj16@gmail.com>",
+    "description": "OCR using Neural Network",
+    "keywords": ["ocr", "neural-network"],
+    "author": { "name": "Jonathan Dixon", "email": "<dixonj16@gmail.com>" },
     "repository": {
         "type": "git",
-        "url": "https://github.com/dixonj16/horus-js.git"
+        "url": "https://github.com/dixonj16/eye-ocr.git"
     },
-    "main": "./lib/horus",
+    "main": "./lib/eye",
     "scripts": {
-      "test": "make test",
-      "build": "uglify horus"
+      "test": "make test"
     },
     "dependencies": {
-        "brain" : ">=0.6.1"
+        "brain": ">=0.6.1"
     },
     "devDependencies" : {
-        "mocha" : ">=1.0.0",
-        "canvas" : ">=0.10.0",
-        "cradle" : ">=0.2.0",
-        "should" : ">=0.6.0",
-        "async" : ">=0.1.18",
+        "mocha": ">=1.0.0",
+        "canvas": ">=0.10.0",
+        "cradle": ">=0.2.0",
+        "should": ">=0.6.0",
+        "async": ">=0.1.18",
         "underscore" : ">=1.4.2"
     },
-    "keywords": ["ocr", "neural network"]
+    "licenses": [{
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/MIT"
+    }]
 }

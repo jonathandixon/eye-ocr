@@ -1,4 +1,3 @@
-# Horus.js
+# Eye-OCR 
 
-OCR implementaton in javascript.
-
+Javascript OCR implementaton using neural networks.

@@ -1,13 +1,13 @@
 var assert = require('assert'),
     canvas = require('canvas'),
     _ = require('underscore'),
-    horus = require('../lib/horus');
+    eye = require('../lib/eye');
 
 describe('OCR', function(){
 
   describe('autoTrainAsciiTest', function(){
     it('train network to recognize visible ascii characters', function(){
-      var ocr = new horus.OCR();
+      var ocr = new eye.OCR();
       var result = ocr.autoTrainAscii({
         errorThresh: 0.01, // High threshold for speed.
         iterations: 100 // Limit total iterations.
@@ -19,7 +19,7 @@ describe('OCR', function(){
 
   describe('runOnFileTest', function() {
     it('should return the text content of the file', function() {
-      var ocr = new horus.OCR();
+      var ocr = new eye.OCR();
       var result = ocr.autoTrainAscii({
         errorThresh: 0.01,
         iterations: 100
